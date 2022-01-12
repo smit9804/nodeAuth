@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const config = require('../middleware/config.json');
 
 module.exports = function(req, res, next) {
     const token = req.header("token");
@@ -6,7 +7,7 @@ module.exports = function(req, res, next) {
         return res.status(401).json({ message: "Authorization error"});
     }
     try{
-        const decoded = jwt.verify(token, "randomString");
+        const decoded = jwt.verify(token, config.accessToken);
         req.user = decoded.user;
         next();
     }
