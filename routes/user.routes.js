@@ -4,6 +4,8 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const router = express.Router();
 const User = require('../model/user.model');
+const config = require('../middleware/config.json');
+const tokenList = {};
 const authorization = require('../middleware/authorization');
 
 //Registering a user
@@ -33,13 +35,15 @@ router.post(
             const salt = await bcrypt.genSalt(10);
             user.password = await bcrypt.hash(password, salt);
             await user.save();
-            const payload = {user: {id: user.id}};
-
-            jwt.sign(payload, "randomString", {expiresIn: 3600},
-            (err, token) => {
-                if(err) throw err;
-                res.status(200).json({token});
-            });   
+            const token = jwt.sign(user, config.accessToken, {expiresIn: config.tokenLife});
+            const refreshToken = jwt.sign(user, config.refreshToken, {expiresIn: config.refreshTokenLife});
+            const response = {
+                "status": "User is registered",
+                "token": token,
+                "refreshToken": refreshToken
+            }
+            tokenList[refreshToken] = response;
+            res.status(200).json(response);
         } catch(err){
             console.log(err.message);
             res.status(500).send("Error saving this object");
@@ -91,6 +95,24 @@ router.get("/userInfo", authorization, async (req, res) => {
     }
     catch (e) {
         res.send({ message: "An error occurred when fetching the user info"});
+    }
+});
+
+//Refreshing the token
+router.post("/token", (req, res) => {
+    const userData = req.body;
+    if((userData.refreshToken) && (userData.refreshToken in tokenList)) {
+        const user = {
+            email: userData.email,
+            password: userData.password
+        }
+        const token = jwt.sign(user, config.accessToken, {expiresIn: config.tokenLife});
+        const response = {token: token};
+        tokenList[userData.refreshToken].token = token;
+        res.status(200).json(response);
+    }
+    else {
+        res.status(404).send("Invalid request");
     }
 });
 
