@@ -8,7 +8,9 @@ http://localhost:4000/user/signup
 
 Login
 http://localhost:4000/user/login
+<br>
 -Requires the user to provide an email and password that matches what is in the database.
+<br>
 -Signs a JWT access token and a refresh token to the user 
 
 Read out user info
